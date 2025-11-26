@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fut ABR - Gerador de Times</title>
+    <title>Fut Gauss - Gerador de Times</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -249,7 +249,7 @@
             return avg;
         }
 
-        // --- Lógica de Geração (Adaptada) ---
+        // --- Lógica de Geração Otimizada (Balanceamento Estrito) ---
 
         window.gerarTimes = () => {
             let pool = playersData.filter(p => p.name.trim() !== "");
@@ -259,49 +259,101 @@
                 return;
             }
 
-            let goleiros = pool.filter(p => p.stats.dispGol === 100);
-            let linha = pool.filter(p => p.stats.dispGol !== 100);
+            // Preparação dos dados: Calcular Força para todos
+            pool.forEach(p => {
+                p.force = calcAverage(p.id);
+                // Goleiro fixo tem força baseada muito mais no Habilidade de Gol
+                // Ajustamos para uma escala comparável (0-100 -> 0-300 para peso alto)
+                // Isso força o time com o goleiro muito bom a pegar jogadores de linha mais fracos para equilibrar
+                if(p.stats.dispGol === 100) p.force = p.stats.habGol * 3; 
+            });
 
-            linha.forEach(p => p.force = calcAverage(p.id));
-            goleiros.forEach(p => p.force = p.stats.habGol * 3);
+            // Separação
+            let fixedKeepers = pool.filter(p => p.stats.dispGol === 100).sort((a,b) => b.force - a.force);
+            let linePlayers = pool.filter(p => p.stats.dispGol !== 100).sort((a,b) => b.force - a.force);
 
-            linha.sort((a, b) => b.force - a.force);
-            goleiros.sort((a, b) => b.force - a.force);
-
-            let time1 = [];
-            let time2 = [];
-            let reservas = [];
-
-            while(goleiros.length > 0) {
-                if(time1.length <= time2.length) time1.push(goleiros.shift());
-                else time2.push(goleiros.shift());
-            }
-
+            let team1 = [];
+            let team2 = [];
+            let reserves = [];
             const targetSize = 5;
 
-            while (linha.length > 0) {
-                if (time1.length >= targetSize && time2.length >= targetSize) {
-                    reservas.push(linha.shift());
+            // 1. Distribuição de Goleiros Fixos
+            // Tenta colocar 1 em cada time se houverem 2
+            while(fixedKeepers.length > 0) {
+                if (team1.length < 1) team1.push(fixedKeepers.shift());
+                else if (team2.length < 1) team2.push(fixedKeepers.shift());
+                else {
+                    // Sobra de goleiro vira jogador de linha (prioritário)
+                    linePlayers.unshift(fixedKeepers.shift());
+                }
+            }
+            // Reordena linha caso tenhamos adicionado goleiros excedentes
+            linePlayers.sort((a,b) => b.force - a.force);
+
+            // 2. Draft Inicial (Algoritmo Guloso)
+            // Preenche os times tentando manter as somas próximas
+            while (linePlayers.length > 0) {
+                // Se ambos cheios, vai pra reserva
+                if (team1.length >= targetSize && team2.length >= targetSize) {
+                    reserves.push(linePlayers.shift());
                     continue;
                 }
 
-                let sum1 = time1.reduce((acc, p) => acc + p.force, 0);
-                let sum2 = time2.reduce((acc, p) => acc + p.force, 0);
-                let player = linha.shift();
+                let p = linePlayers.shift();
+                
+                let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
+                let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
 
-                if (time1.length < targetSize && time2.length < targetSize) {
-                    if (sum1 <= sum2) time1.push(player);
-                    else time2.push(player);
-                } else if (time1.length < targetSize) {
-                    time1.push(player);
-                } else if (time2.length < targetSize) {
-                    time2.push(player);
+                let canAddT1 = team1.length < targetSize;
+                let canAddT2 = team2.length < targetSize;
+
+                if (canAddT1 && canAddT2) {
+                    // Adiciona no time mais fraco no momento
+                    if (sum1 <= sum2) team1.push(p);
+                    else team2.push(p);
+                } else if (canAddT1) {
+                    team1.push(p);
                 } else {
-                    reservas.push(player);
+                    team2.push(p);
                 }
             }
 
-            renderOutput(time1, time2, reservas);
+            // 3. Otimização de Trocas (Refinamento)
+            // Tenta trocar jogadores de LINHA entre T1 e T2 para minimizar a diferença absoluta de pontuação
+            let improved = true;
+            while(improved) {
+                improved = false;
+                let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
+                let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
+                let currentDiff = Math.abs(sum1 - sum2);
+
+                // Itera sobre todos os pares possíveis
+                for (let i = 0; i < team1.length; i++) {
+                    for (let j = 0; j < team2.length; j++) {
+                        let p1 = team1[i];
+                        let p2 = team2[j];
+
+                        // NÃO troca goleiros fixos (para garantir 1 por time se distribuído assim)
+                        if (p1.stats.dispGol === 100 || p2.stats.dispGol === 100) continue;
+
+                        // Simula a troca
+                        let newSum1 = sum1 - p1.force + p2.force;
+                        let newSum2 = sum2 - p2.force + p1.force;
+                        let newDiff = Math.abs(newSum1 - newSum2);
+
+                        // Se a diferença diminuiu, efetiva a troca
+                        if (newDiff < currentDiff) {
+                            team1[i] = p2;
+                            team2[j] = p1;
+                            improved = true; // Marca que melhorou para rodar o loop de novo
+                            break; 
+                        }
+                    }
+                    if (improved) break;
+                }
+            }
+
+            renderOutput(team1, team2, reserves);
         };
 
         function gerarComentario(p) {
@@ -401,7 +453,7 @@
                 text += resDiv.innerText.replace(/\n/g, ', '); 
             }
 
-            text += "\n_Gerado por IA da Zoeira_";
+            text += "\n_Gerado por IA da GaussFut_";
 
             navigator.clipboard.writeText(text).then(() => {
                 alert("Times copiados! Agora cola no Zap.");
