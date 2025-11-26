@@ -314,29 +314,48 @@
             // O resto vai pra reserva (agora a reserva é aleatória, não só os ruins)
             reserves = linePlayers.slice(slotsNeeded);
 
-            // 5. Ordenar os escolhidos por força para distribuir equilibrado (Snake Draft)
+            // 5. Ordenar os escolhidos por força para distribuir equilibrado
             activeLinePlayers.sort((a,b) => b.force - a.force);
 
-            // 6. Distribuição Snake Draft (1-2-2-1...) para evitar "melhores no mesmo time"
-            // O Greedy (Soma) às vezes coloca o 1º e 2º juntos se o resto for fraco. Snake evita isso.
+            // 6. Distribuição Equilibrada por Pares (Melhora a distribuição de "panelas")
+            // Essa lógica garante que os melhores jogadores sejam divididos um a um.
+            // Pega o par de melhores disponíveis: O melhor vai pro time mais fraco.
             while(activeLinePlayers.length > 0) {
-                let p = activeLinePlayers.shift();
+                // Pega até 2 jogadores (o par do topo)
+                let p1 = activeLinePlayers.shift();
+                let p2 = activeLinePlayers.length > 0 ? activeLinePlayers.shift() : null;
 
-                // Lógica simples de Snake baseada na contagem atual
-                // Mas com verificação de vaga
-                let canAddT1 = team1.length < PLAYERS_PER_TEAM;
-                let canAddT2 = team2.length < PLAYERS_PER_TEAM;
+                // Verifica vagas
+                let spaceT1 = PLAYERS_PER_TEAM - team1.length;
+                let spaceT2 = PLAYERS_PER_TEAM - team2.length;
 
-                if (canAddT1 && canAddT2) {
-                    // Se ambos têm vaga, usa a soma para equilibrar
+                // Se ambos têm vaga, aplica lógica do equilíbrio
+                if (spaceT1 > 0 && spaceT2 > 0) {
                     let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
                     let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
-                    if (sum1 <= sum2) team1.push(p);
-                    else team2.push(p);
-                } else if (canAddT1) {
-                    team1.push(p);
+
+                    if (p2) {
+                        // Temos um par. O mais forte (p1) vai para o time mais fraco.
+                        if (sum1 <= sum2) {
+                            team1.push(p1);
+                            team2.push(p2);
+                        } else {
+                            team2.push(p1);
+                            team1.push(p2);
+                        }
+                    } else {
+                        // Só sobrou um. Vai pro time mais fraco.
+                        if (sum1 <= sum2) team1.push(p1);
+                        else team2.push(p1);
+                    }
+                } else if (spaceT1 > 0) {
+                    // Só T1 tem vaga
+                    team1.push(p1);
+                    if(p2) team1.push(p2);
                 } else {
-                    team2.push(p);
+                    // Só T2 tem vaga
+                    team2.push(p1);
+                    if(p2) team2.push(p2);
                 }
             }
 
@@ -451,7 +470,6 @@
             const t1 = document.querySelectorAll('#teams-output > div')[0];
             const t2 = document.querySelectorAll('#teams-output > div')[1];
             
-            let text = "*Fut Gauss - 27/11 às 20h*\n\n";
             
             const extractTeam = (el) => {
                 let teamName = el.querySelector('h3').innerText;
