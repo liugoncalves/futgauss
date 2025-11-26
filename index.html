@@ -23,6 +23,7 @@
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-3xl font-bold uppercase tracking-wider"><i class="fas fa-futbol mr-2"></i>Fut Gauss</h1>
+                <p class="text-green-200 text-sm mt-1">Matemática da Várzea: Equilíbrio Perfeito</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="addPlayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transform transition hover:scale-105 text-sm">
@@ -73,14 +74,14 @@
                         <i class="fas fa-times fa-2x"></i>
                     </button>
                     
-                    <h2 class="text-2xl font-bold text-yellow-400 mb-6 text-center uppercase border-b border-slate-600 pb-4">Escalação Oficial</h2>
+                    <h2 class="text-2xl font-bold text-yellow-400 mb-6 text-center uppercase border-b border-slate-600 pb-4">Escalação Oficial (Fut Gauss)</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teams-output">
                         <!-- Output here -->
                     </div>
 
                     <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
-                        <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Próximos)</h3>
+                        <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Sorteio)</h3>
                         <div id="reserves-output" class="text-gray-300"></div>
                     </div>
 
@@ -249,7 +250,16 @@
             return avg;
         }
 
-        // --- Lógica de Geração Otimizada (Balanceamento Estrito) ---
+        // --- Utils: Fisher-Yates Shuffle ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Lógica de Geração Fut Gauss (Balanceamento e Mistura) ---
 
         window.gerarTimes = () => {
             let pool = playersData.filter(p => p.name.trim() !== "");
@@ -259,56 +269,68 @@
                 return;
             }
 
-            // Preparação dos dados: Calcular Força para todos
+            // 1. Calcular Força
             pool.forEach(p => {
                 p.force = calcAverage(p.id);
-                // Goleiro fixo tem força baseada muito mais no Habilidade de Gol
-                // Ajustamos para uma escala comparável (0-100 -> 0-300 para peso alto)
-                // Isso força o time com o goleiro muito bom a pegar jogadores de linha mais fracos para equilibrar
+                // Peso extra para goleiro fixo na ordenação, mas não no sorteio de quem joga
                 if(p.stats.dispGol === 100) p.force = p.stats.habGol * 3; 
             });
 
-            // Separação
-            let fixedKeepers = pool.filter(p => p.stats.dispGol === 100).sort((a,b) => b.force - a.force);
-            let linePlayers = pool.filter(p => p.stats.dispGol !== 100).sort((a,b) => b.force - a.force);
+            // 2. Separar Goleiros Fixos e Linha
+            let fixedKeepers = pool.filter(p => p.stats.dispGol === 100);
+            let linePlayers = pool.filter(p => p.stats.dispGol !== 100);
 
             let team1 = [];
             let team2 = [];
             let reserves = [];
-            const targetSize = 5;
+            
+            const PLAYERS_PER_TEAM = 5;
+            const TOTAL_SLOTS = PLAYERS_PER_TEAM * 2;
 
-            // 1. Distribuição de Goleiros Fixos
-            // Tenta colocar 1 em cada time se houverem 2
+            // 3. Garantir Goleiros Fixos no jogo (Prioridade Máxima)
+            // Se houver mais de 2 goleiros fixos, os excedentes viram linha ou reserva
+            // Ordenar goleiros por força para distribuir equilibrado
+            fixedKeepers.sort((a,b) => b.force - a.force);
+
             while(fixedKeepers.length > 0) {
                 if (team1.length < 1) team1.push(fixedKeepers.shift());
                 else if (team2.length < 1) team2.push(fixedKeepers.shift());
                 else {
-                    // Sobra de goleiro vira jogador de linha (prioritário)
-                    linePlayers.unshift(fixedKeepers.shift());
+                    // Sobra de goleiro vira jogador de linha (vai pro pool de sorteio)
+                    linePlayers.push(fixedKeepers.shift());
                 }
             }
-            // Reordena linha caso tenhamos adicionado goleiros excedentes
-            linePlayers.sort((a,b) => b.force - a.force);
 
-            // 2. Draft Inicial (Algoritmo Guloso)
-            // Preenche os times tentando manter as somas próximas
-            while (linePlayers.length > 0) {
-                // Se ambos cheios, vai pra reserva
-                if (team1.length >= targetSize && team2.length >= targetSize) {
-                    reserves.push(linePlayers.shift());
-                    continue;
-                }
+            // 4. Selecionar Jogadores de Linha para o Jogo (MISTURA)
+            // Aqui está o segredo: EMBARALHAR a linha antes de escolher quem joga.
+            // Assim, ruins e bons têm a mesma chance de jogar ou ficar na reserva.
+            shuffleArray(linePlayers);
 
-                let p = linePlayers.shift();
-                
-                let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
-                let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
+            // Quantos faltam para completar os times?
+            let slotsNeeded = TOTAL_SLOTS - (team1.length + team2.length);
+            
+            // Pega os N primeiros do embaralhado para jogar
+            let activeLinePlayers = linePlayers.slice(0, slotsNeeded);
+            // O resto vai pra reserva (agora a reserva é aleatória, não só os ruins)
+            reserves = linePlayers.slice(slotsNeeded);
 
-                let canAddT1 = team1.length < targetSize;
-                let canAddT2 = team2.length < targetSize;
+            // 5. Ordenar os escolhidos por força para distribuir equilibrado (Snake Draft)
+            activeLinePlayers.sort((a,b) => b.force - a.force);
+
+            // 6. Distribuição Snake Draft (1-2-2-1...) para evitar "melhores no mesmo time"
+            // O Greedy (Soma) às vezes coloca o 1º e 2º juntos se o resto for fraco. Snake evita isso.
+            while(activeLinePlayers.length > 0) {
+                let p = activeLinePlayers.shift();
+
+                // Lógica simples de Snake baseada na contagem atual
+                // Mas com verificação de vaga
+                let canAddT1 = team1.length < PLAYERS_PER_TEAM;
+                let canAddT2 = team2.length < PLAYERS_PER_TEAM;
 
                 if (canAddT1 && canAddT2) {
-                    // Adiciona no time mais fraco no momento
+                    // Se ambos têm vaga, usa a soma para equilibrar
+                    let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
+                    let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
                     if (sum1 <= sum2) team1.push(p);
                     else team2.push(p);
                 } else if (canAddT1) {
@@ -318,34 +340,32 @@
                 }
             }
 
-            // 3. Otimização de Trocas (Refinamento)
-            // Tenta trocar jogadores de LINHA entre T1 e T2 para minimizar a diferença absoluta de pontuação
+            // 7. Otimização Final (Trocas para refinar equilíbrio)
             let improved = true;
-            while(improved) {
+            let iterations = 0;
+            while(improved && iterations < 50) { // Limite de segurança
                 improved = false;
+                iterations++;
                 let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
                 let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
                 let currentDiff = Math.abs(sum1 - sum2);
 
-                // Itera sobre todos os pares possíveis
                 for (let i = 0; i < team1.length; i++) {
                     for (let j = 0; j < team2.length; j++) {
                         let p1 = team1[i];
                         let p2 = team2[j];
 
-                        // NÃO troca goleiros fixos (para garantir 1 por time se distribuído assim)
+                        // Trava goleiros fixos
                         if (p1.stats.dispGol === 100 || p2.stats.dispGol === 100) continue;
 
-                        // Simula a troca
                         let newSum1 = sum1 - p1.force + p2.force;
                         let newSum2 = sum2 - p2.force + p1.force;
                         let newDiff = Math.abs(newSum1 - newSum2);
 
-                        // Se a diferença diminuiu, efetiva a troca
                         if (newDiff < currentDiff) {
                             team1[i] = p2;
                             team2[j] = p1;
-                            improved = true; // Marca que melhorou para rodar o loop de novo
+                            improved = true;
                             break; 
                         }
                     }
@@ -431,6 +451,7 @@
             const t1 = document.querySelectorAll('#teams-output > div')[0];
             const t2 = document.querySelectorAll('#teams-output > div')[1];
             
+            let text = "*Fut Gauss - 27/11 às 20h*\n\n";
             
             const extractTeam = (el) => {
                 let teamName = el.querySelector('h3').innerText;
@@ -449,11 +470,11 @@
             
             const resDiv = document.getElementById('reserves-output');
             if(resDiv.innerText.length > 5 && !resDiv.innerText.includes("Ninguém")) {
-                text += "*RESERVAS (Próximos)*\n";
+                text += "*RESERVAS (Sorteio)*\n";
                 text += resDiv.innerText.replace(/\n/g, ', '); 
             }
 
-            text += "\n_Gerado por IA da GaussFut_";
+            text += "\n_Gerado por Fut Gauss_";
 
             navigator.clipboard.writeText(text).then(() => {
                 alert("Times copiados! Agora cola no Zap.");
