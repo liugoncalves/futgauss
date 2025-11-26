@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fut ABR - Gerador de Times</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: #334155; outline: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; cursor: pointer; transition: background .15s ease-in-out; }
+        .slider::-webkit-slider-thumb:hover { background: #16a34a; }
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        .trash-btn:hover { color: #ef4444; transform: scale(1.1); }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Header -->
+    <header class="bg-green-800 text-white p-6 shadow-lg border-b-4 border-green-600 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold uppercase tracking-wider"><i class="fas fa-futbol mr-2"></i>Fut ABR</h1>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="addPlayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transform transition hover:scale-105 text-sm">
+                    <i class="fas fa-plus mr-2"></i>Adicionar
+                </button>
+                <button onclick="gerarTimes()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-full shadow-lg transform transition hover:scale-105">
+                    <i class="fas fa-whistle mr-2"></i>Escalar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-5xl mx-auto p-4">
+        
+        <!-- Intro / Manual do Boleiro -->
+        <div class="bg-slate-800 rounded-lg p-4 mb-6 text-sm text-slate-300 border border-slate-700">
+            <h3 class="font-bold text-yellow-400 mb-2 uppercase text-xs tracking-wide"><i class="fas fa-book-open mr-2"></i>Manual de Atributos (Regras da Várzea):</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <p><strong class="text-green-400">Hab. Ataque:</strong> Sabe chutar no gol ou manda no vizinho? (Chute + Habilidade)</p>
+                <p><strong class="text-blue-400">Hab. Defesa:</strong> Sabe desarmar na boa ou só para na voadora?</p>
+                <p><strong class="text-purple-400">Hab. Gol:</strong> Paredão intransponível ou mão de alface?</p>
+                <p><strong class="text-slate-200">Disp. Defesa:</strong> Volta pra marcar ou fica na banheira esperando a bola?</p>
+                <p><strong class="text-slate-200">Disp. Passe:</strong> Garçom do time ou fominha que morre com a bola?</p>
+                <p><strong class="text-yellow-400">Ir p/ Gol:</strong> Coragem pra ser goleiro. <span class="text-white bg-red-600 px-1 rounded">ATENÇÃO:</span> Só vira <strong>Goleiro Fixo</strong> se marcar <strong>100</strong>. Menos que isso, entra no revezamento.</p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-700 text-right text-xs text-slate-500" id="player-count">0 Jogadores</div>
+        </div>
+
+        <!-- Players Grid -->
+        <div id="players-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Cards will be injected here via JS -->
+        </div>
+        
+        <!-- Add Button Bottom -->
+        <div class="mt-6 text-center">
+            <button onclick="addPlayer()" class="border-2 border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 hover:bg-slate-800 rounded-lg p-4 w-full md:w-1/2 transition-all">
+                <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                Adicionar Jogador Extra
+            </button>
+        </div>
+
+        <!-- Results Modal -->
+        <div id="results-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 overflow-y-auto">
+            <div class="min-h-screen px-4 text-center">
+                <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+                <div class="inline-block w-full max-w-3xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-slate-800 shadow-2xl rounded-2xl border border-slate-600 relative">
+                    <button onclick="document.getElementById('results-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                        <i class="fas fa-times fa-2x"></i>
+                    </button>
+                    
+                    <h2 class="text-2xl font-bold text-yellow-400 mb-6 text-center uppercase border-b border-slate-600 pb-4">Escalação Oficial</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teams-output">
+                        <!-- Output here -->
+                    </div>
+
+                    <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                        <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Próximos)</h3>
+                        <div id="reserves-output" class="text-gray-300"></div>
+                    </div>
+
+                    <div class="mt-8 text-center">
+                        <button onclick="copyToClipboard()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-lg text-lg w-full md:w-auto">
+                            <i class="fab fa-whatsapp mr-2"></i>Copiar para WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Dados iniciais
+        const initialNames = [
+            "Bruno", "Leo", "Thiago", "Ricardo", "Pedro", "Welliton", 
+            "Vinicius", "Abade", "Bola de Fogo ☄", "Alexandre", 
+            "Gustavo", "Douglas", "Caio"
+        ];
+
+        const defaultStats = {
+            habAtaque: 50,
+            habDefesa: 50,
+            habGol: 0,
+            dispDefesa: 50,
+            dispToque: 50,
+            dispGol: 0
+        };
+
+        // Gerenciamento de IDs únicos para permitir deletar sem quebrar referências
+        let nextId = 0;
+        let playersData = initialNames.map(name => ({
+            id: nextId++,
+            name: name,
+            stats: { ...defaultStats }
+        }));
+
+        // Vocabulário de Zoeira
+        const vocabulario = {
+            ruimGeral: ["Bisonho", "Perna de pau", "Grosso", "Pereba", "Açougueiro", "Bagrinho", "Bode cego", "Canela de vidro", "Matador de canela"],
+            defesaFraca: ["Avenida", "Não marca nem consulta", "Mãe da caridade", "Porteira aberta"],
+            ataqueFraco: ["Chute de pantufa", "Isola tudo pra lua", "Inimigo do gol", "Pé murcho", "Chinelinho"],
+            fominha: ["Dono da bola", "Não toca nem pra mãe", "Acha que é o Messi", "Ciscativo"],
+            goleiroRuim: ["Mão de alface", "Mão de maionese", "Mão furada", "Frangueiro", "Chama-gol"],
+            goleiroBom: ["Paredão", "Fecha o gol", "Muralha", "Gato"],
+            bom: ["Craque", "Maquininha", "Motorzinho", "Liso", "Cobra", "Filé"]
+        };
+
+        // Container
+        const container = document.getElementById('players-container');
+        const countSpan = document.getElementById('player-count');
+
+        function renderPlayers() {
+            container.innerHTML = '';
+            countSpan.innerText = `${playersData.length} Jogadores`;
+
+            playersData.forEach((player, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-700 rounded-lg p-3 card shadow-md border-l-4 border-slate-500 relative";
+                
+                // Cabeçalho do Card
+                const header = `
+                    <div class="flex justify-between items-center mb-3 pr-6">
+                        <div class="flex items-center gap-2">
+                             <span class="bg-slate-800 text-xs font-mono py-1 px-2 rounded text-slate-400">${index + 1}</span>
+                             <input type="text" value="${player.name}" 
+                                onchange="updateName(${player.id}, this.value)"
+                                class="bg-transparent font-bold text-lg text-white border-b border-transparent hover:border-slate-400 focus:border-green-500 outline-none w-32 md:w-40">
+                        </div>
+                        <div class="text-xs text-yellow-400 font-mono">Méd: <span id="avg-${player.id}">0</span></div>
+                    </div>
+                    <button onclick="removePlayer(${player.id})" class="absolute top-2 right-2 text-slate-500 trash-btn transition-colors" title="Remover Jogador">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+
+                // Sliders compactos - Reorganizados
+                let sliders = '<div class="space-y-2 text-xs">';
+                
+                const attributes = [
+                    // Habilidades (Grupo Principal)
+                    { key: 'habAtaque', label: 'Hab. Ataque', icon: 'fa-futbol', color: 'text-green-400' },
+                    { key: 'habDefesa', label: 'Hab. Defesa', icon: 'fa-shield-alt', color: 'text-blue-400' },
+                    { key: 'habGol', label: 'Hab. Gol', icon: 'fa-hands', color: 'text-purple-400' },
+                    // Disposições (Secundário)
+                    { key: 'dispDefesa', label: 'Disp. Def', icon: 'fa-running' },
+                    { key: 'dispToque', label: 'Disp. Passe', icon: 'fa-users' },
+                    { key: 'dispGol', label: 'Ir p/ Gol', icon: 'fa-hand-paper', color: 'text-yellow-400' }
+                ];
+
+                attributes.forEach(attr => {
+                    sliders += `
+                        <div class="flex items-center gap-2">
+                            <i class="fas ${attr.icon} w-4 text-center ${attr.color || 'text-slate-400'}"></i>
+                            <label class="w-16 text-slate-300 truncate" title="${attr.label}">${attr.label}</label>
+                            <input type="range" min="0" max="100" value="${player.stats[attr.key]}" 
+                                class="slider flex-1 h-1"
+                                oninput="updateStat(${player.id}, '${attr.key}', this.value)">
+                            <span class="w-6 text-right font-mono text-green-400" id="val-${player.id}-${attr.key}">${player.stats[attr.key]}</span>
+                        </div>
+                    `;
+                });
+                sliders += '</div>';
+
+                card.innerHTML = header + sliders;
+                container.appendChild(card);
+                calcAverage(player.id);
+            });
+        }
+
+        // --- Funções de Gerenciamento ---
+
+        window.addPlayer = () => {
+            playersData.push({
+                id: nextId++,
+                name: "Novo Jogador",
+                stats: { ...defaultStats }
+            });
+            renderPlayers();
+            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 100);
+        };
+
+        window.removePlayer = (id) => {
+            if(confirm('Tem certeza que quer remover este craque?')) {
+                playersData = playersData.filter(p => p.id !== id);
+                renderPlayers();
+            }
+        };
+
+        window.updateName = (id, val) => { 
+            const p = playersData.find(p => p.id === id);
+            if(p) p.name = val; 
+        };
+        
+        window.updateStat = (id, key, val) => {
+            const p = playersData.find(p => p.id === id);
+            if(p) {
+                p.stats[key] = parseInt(val);
+                const valEl = document.getElementById(`val-${id}-${key}`);
+                if(valEl) valEl.innerText = val;
+                calcAverage(id);
+            }
+        };
+
+        function calcAverage(id) {
+            const p = playersData.find(p => p.id === id);
+            if(!p) return;
+
+            const s = p.stats;
+            // Média ponderada simples
+            // Substituído Chute+Passe por HabAtaque, agora são 4 itens principais na linha
+            let sum = s.habAtaque + s.habDefesa + s.dispDefesa + s.dispToque;
+            let count = 4;
+            
+            // Se tiver disposição pro gol, conta habilidade de gol na média
+            if(s.dispGol > 50) {
+                sum += s.habGol * 2;
+                count += 2;
+            }
+
+            const avg = Math.round(sum / count);
+            const avgEl = document.getElementById(`avg-${id}`);
+            if(avgEl) avgEl.innerText = avg;
+            return avg;
+        }
+
+        // --- Lógica de Geração (Adaptada) ---
+
+        window.gerarTimes = () => {
+            let pool = playersData.filter(p => p.name.trim() !== "");
+            
+            if (pool.length < 2) {
+                alert("Adicione pelo menos 2 jogadores para gerar times!");
+                return;
+            }
+
+            let goleiros = pool.filter(p => p.stats.dispGol === 100);
+            let linha = pool.filter(p => p.stats.dispGol !== 100);
+
+            linha.forEach(p => p.force = calcAverage(p.id));
+            goleiros.forEach(p => p.force = p.stats.habGol * 3);
+
+            linha.sort((a, b) => b.force - a.force);
+            goleiros.sort((a, b) => b.force - a.force);
+
+            let time1 = [];
+            let time2 = [];
+            let reservas = [];
+
+            while(goleiros.length > 0) {
+                if(time1.length <= time2.length) time1.push(goleiros.shift());
+                else time2.push(goleiros.shift());
+            }
+
+            const targetSize = 5;
+
+            while (linha.length > 0) {
+                if (time1.length >= targetSize && time2.length >= targetSize) {
+                    reservas.push(linha.shift());
+                    continue;
+                }
+
+                let sum1 = time1.reduce((acc, p) => acc + p.force, 0);
+                let sum2 = time2.reduce((acc, p) => acc + p.force, 0);
+                let player = linha.shift();
+
+                if (time1.length < targetSize && time2.length < targetSize) {
+                    if (sum1 <= sum2) time1.push(player);
+                    else time2.push(player);
+                } else if (time1.length < targetSize) {
+                    time1.push(player);
+                } else if (time2.length < targetSize) {
+                    time2.push(player);
+                } else {
+                    reservas.push(player);
+                }
+            }
+
+            renderOutput(time1, time2, reservas);
+        };
+
+        function gerarComentario(p) {
+            const s = p.stats;
+            const r = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            if (s.dispGol === 100) {
+                if (s.habGol < 40) return `Goleiro chama-gol. ${r(vocabulario.goleiroRuim)}.`;
+                if (s.habGol > 80) return `Paredão. ${r(vocabulario.goleiroBom)}.`;
+                return "Goleiro mediano, torcer pra não frangar.";
+            }
+
+            let criticas = [];
+            if (s.habAtaque < 30) criticas.push(`ataque de ${r(['risada', 'pelúcia'])}`);
+            if (s.dispDefesa < 30) criticas.push(`${r(['avenida', 'mãe da caridade'])} na defesa`);
+            if (s.dispToque < 30) criticas.push(`${r(vocabulario.fominha)}`);
+            
+            if (criticas.length > 0) return `${r(vocabulario.ruimGeral)}. Tem ${criticas.join(' e ')}.`;
+            
+            if (s.habAtaque > 80) return `${r(vocabulario.bom)}, liso no ataque.`;
+            if (s.dispToque > 70) return "Garçom, toca bem.";
+            if (s.dispDefesa > 80) return "Xerife, açougueiro da zaga.";
+            
+            return `${r(vocabulario.ruimGeral)}, só completa time.`;
+        }
+
+        function renderOutput(t1, t2, res) {
+            const modal = document.getElementById('results-modal');
+            const containerT = document.getElementById('teams-output');
+            const containerR = document.getElementById('reserves-output');
+            
+            const sum1 = t1.reduce((a,b)=>a+b.force, 0);
+            const sum2 = t2.reduce((a,b)=>a+b.force, 0);
+
+            // Ajustando a lógica de exibição de posição baseada nos novos atributos
+            const getPosicao = (p) => {
+                if (p.stats.dispGol === 100) return 'Goleiro Fixo';
+                if (p.stats.habGol > p.stats.habAtaque && p.stats.habGol > 50) return 'Goleiro/Linha';
+                return 'Linha';
+            };
+
+            const teamHTML = (name, players, sum, color) => `
+                <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
+                    <div class="${color} p-3 text-center">
+                        <h3 class="font-bold text-xl text-white uppercase">${name}</h3>
+                        <p class="text-xs text-white opacity-80">Força Total: ${sum} | Jogadores: ${players.length}</p>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        ${players.map(p => `
+                            <div class="border-b border-slate-800 pb-2 last:border-0">
+                                <div class="flex justify-between text-yellow-400 font-bold">
+                                    <span>${p.name}</span>
+                                    <span class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400">
+                                        ${getPosicao(p)}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-400 italic">"${gerarComentario(p)}"</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            containerT.innerHTML = teamHTML("Time 1 (Coletes)", t1, sum1, "bg-orange-600") + 
+                                   teamHTML("Time 2 (Sem Colete)", t2, sum2, "bg-blue-600");
+
+            containerR.innerHTML = res.length > 0 ? res.map(p => 
+                `<span class="inline-block bg-slate-800 rounded px-2 py-1 m-1 text-sm border border-slate-600">${p.name}</span>`
+            ).join('') : '<p class="text-sm italic">Ninguém no banco.</p>';
+
+            modal.classList.remove('hidden');
+        }
+
+        window.copyToClipboard = () => {
+            const t1 = document.querySelectorAll('#teams-output > div')[0];
+            const t2 = document.querySelectorAll('#teams-output > div')[1];
+            
+            
+            const extractTeam = (el) => {
+                let teamName = el.querySelector('h3').innerText;
+                let rows = el.querySelectorAll('.p-4 > div');
+                let str = `*${teamName}*\n`;
+                rows.forEach(r => {
+                    let name = r.querySelector('span').innerText;
+                    let comment = r.querySelector('p').innerText;
+                    str += `⚽ ${name}: ${comment}\n`;
+                });
+                return str;
+            };
+
+            text += extractTeam(t1) + "\n";
+            text += extractTeam(t2) + "\n";
+            
+            const resDiv = document.getElementById('reserves-output');
+            if(resDiv.innerText.length > 5 && !resDiv.innerText.includes("Ninguém")) {
+                text += "*RESERVAS (Próximos)*\n";
+                text += resDiv.innerText.replace(/\n/g, ', '); 
+            }
+
+            text += "\n_Gerado por IA da Zoeira_";
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Times copiados! Agora cola no Zap.");
+            });
+        };
+
+        // Render inicial
+        renderPlayers();
+
+    </script>
+</body>
+</html>
