@@ -23,7 +23,7 @@
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-3xl font-bold uppercase tracking-wider"><i class="fas fa-futbol mr-2"></i>Fut Gauss</h1>
-                <p class="text-green-200 text-sm mt-1">Matemática da Várzea: Equilíbrio Perfeito</p>
+                <p class="text-green-200 text-sm mt-1">Algoritmo de Pares Dinâmicos (Anti-Panela)</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="addPlayer()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transform transition hover:scale-105 text-sm">
@@ -42,12 +42,12 @@
         <div class="bg-slate-800 rounded-lg p-4 mb-6 text-sm text-slate-300 border border-slate-700">
             <h3 class="font-bold text-yellow-400 mb-2 uppercase text-xs tracking-wide"><i class="fas fa-book-open mr-2"></i>Manual de Atributos (Regras da Várzea):</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                <p><strong class="text-green-400">Hab. Ataque:</strong> Sabe chutar no gol ou manda no vizinho? (Chute + Habilidade)</p>
-                <p><strong class="text-blue-400">Hab. Defesa:</strong> Sabe desarmar na boa ou só para na voadora?</p>
-                <p><strong class="text-purple-400">Hab. Gol:</strong> Paredão intransponível ou mão de alface?</p>
-                <p><strong class="text-slate-200">Disp. Defesa:</strong> Volta pra marcar ou fica na banheira esperando a bola?</p>
-                <p><strong class="text-slate-200">Disp. Passe:</strong> Garçom do time ou fominha que morre com a bola?</p>
-                <p><strong class="text-yellow-400">Ir p/ Gol:</strong> Coragem pra ser goleiro. <span class="text-white bg-red-600 px-1 rounded">ATENÇÃO:</span> Só vira <strong>Goleiro Fixo</strong> se marcar <strong>100</strong>. Menos que isso, entra no revezamento.</p>
+                <p><strong class="text-green-400">Hab. Ataque (Peso 2x):</strong> Sabe chutar e driblar.</p>
+                <p><strong class="text-blue-400">Hab. Defesa (Peso 2x):</strong> Sabe desarmar sem quebrar a perna.</p>
+                <p><strong class="text-purple-400">Hab. Gol:</strong> Só conta para a nota se for pro gol.</p>
+                <p><strong class="text-slate-400">Disp. Defesa (Peso 1x):</strong> Vontade de voltar pra marcar.</p>
+                <p><strong class="text-slate-400">Disp. Passe (Peso 1x):</strong> Vontade de soltar a bola.</p>
+                <p><strong class="text-yellow-400">Ir p/ Gol:</strong> Se for <strong>100</strong>, vira Goleiro Fixo e a nota ignora ataque/defesa.</p>
             </div>
             <div class="mt-3 pt-2 border-t border-slate-700 text-right text-xs text-slate-500" id="player-count">0 Jogadores</div>
         </div>
@@ -81,7 +81,7 @@
                     </div>
 
                     <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
-                        <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Sorteio)</h3>
+                        <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Sorteio Aleatório)</h3>
                         <div id="reserves-output" class="text-gray-300"></div>
                     </div>
 
@@ -113,7 +113,6 @@
             dispGol: 0
         };
 
-        // Gerenciamento de IDs únicos para permitir deletar sem quebrar referências
         let nextId = 0;
         let playersData = initialNames.map(name => ({
             id: nextId++,
@@ -121,18 +120,45 @@
             stats: { ...defaultStats }
         }));
 
-        // Vocabulário de Zoeira
         const vocabulario = {
-            ruimGeral: ["Bisonho", "Perna de pau", "Grosso", "Pereba", "Açougueiro", "Bagrinho", "Bode cego", "Canela de vidro", "Matador de canela"],
-            defesaFraca: ["Avenida", "Não marca nem consulta", "Mãe da caridade", "Porteira aberta"],
-            ataqueFraco: ["Chute de pantufa", "Isola tudo pra lua", "Inimigo do gol", "Pé murcho", "Chinelinho"],
-            fominha: ["Dono da bola", "Não toca nem pra mãe", "Acha que é o Messi", "Ciscativo"],
-            goleiroRuim: ["Mão de alface", "Mão de maionese", "Mão furada", "Frangueiro", "Chama-gol"],
-            goleiroBom: ["Paredão", "Fecha o gol", "Muralha", "Gato"],
-            bom: ["Craque", "Maquininha", "Motorzinho", "Liso", "Cobra", "Filé"]
+            ruimGeral: [
+            "Bisonho", , "Grosso", "Açougueiro", 
+            "Bode cego", "Matador de canela",
+            "Toca torto", "Arranca suspiro"
+            ],
+
+            defesaFraca: [
+            "Avenida", "Não marca nem consulta", "Mãe da caridade", "Porteira aberta",
+            "Passa manteiga", "Dá espaço até pra sombra", "Buraco negro", "Cortina de ar"
+            ],
+
+            ataqueFraco: [
+            "Chute de pantufa", "Isola tudo pra lua", "Inimigo do gol", "Pé murcho", "Chinelinho",
+            "Faz dente de leite", "Mira torta", "Pega vento", "Senta na bola"
+            ],
+
+            fominha: [
+            "Dono da bola", "Não toca nem pra mãe","Gladiador da posse", 
+            "Passa fome mas não passa a bola",   "Se a bola falasse, ia gritar por liberdade"
+            ],
+
+            goleiroRuim: [
+            "Mão de alface", "Mão de maionese", "Mão furada", "Frangueiro", "Chama-gol",
+            "Toca rede por ele", "Vitrine de gols", "Pega vento"
+            ],
+
+            goleiroBom: [
+            "Paredão", "Fecha o gol", "Muralha", "Gato",
+            "Salvador da pátria", "Deus da defesa", "Luva de ferro", "Impenetrável"
+            ],
+
+            bom: [
+            "Maquininha", "Motorzinho", "Liso", "Cobra",
+            "Canhão", "Mágico da bola"
+            ]
+
         };
 
-        // Container
         const container = document.getElementById('players-container');
         const countSpan = document.getElementById('player-count');
 
@@ -144,7 +170,6 @@
                 const card = document.createElement('div');
                 card.className = "bg-slate-700 rounded-lg p-3 card shadow-md border-l-4 border-slate-500 relative";
                 
-                // Cabeçalho do Card
                 const header = `
                     <div class="flex justify-between items-center mb-3 pr-6">
                         <div class="flex items-center gap-2">
@@ -153,24 +178,20 @@
                                 onchange="updateName(${player.id}, this.value)"
                                 class="bg-transparent font-bold text-lg text-white border-b border-transparent hover:border-slate-400 focus:border-green-500 outline-none w-32 md:w-40">
                         </div>
-                        <div class="text-xs text-yellow-400 font-mono">Méd: <span id="avg-${player.id}">0</span></div>
+                        <div class="text-xs text-yellow-400 font-mono">Over: <span id="avg-${player.id}">0</span></div>
                     </div>
                     <button onclick="removePlayer(${player.id})" class="absolute top-2 right-2 text-slate-500 trash-btn transition-colors" title="Remover Jogador">
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
 
-                // Sliders compactos - Reorganizados
                 let sliders = '<div class="space-y-2 text-xs">';
-                
                 const attributes = [
-                    // Habilidades (Grupo Principal)
                     { key: 'habAtaque', label: 'Hab. Ataque', icon: 'fa-futbol', color: 'text-green-400' },
                     { key: 'habDefesa', label: 'Hab. Defesa', icon: 'fa-shield-alt', color: 'text-blue-400' },
                     { key: 'habGol', label: 'Hab. Gol', icon: 'fa-hands', color: 'text-purple-400' },
-                    // Disposições (Secundário)
-                    { key: 'dispDefesa', label: 'Disp. Def', icon: 'fa-running' },
-                    { key: 'dispToque', label: 'Disp. Passe', icon: 'fa-users' },
+                    { key: 'dispDefesa', label: 'Disp. Def', icon: 'fa-running', color: 'text-slate-400' },
+                    { key: 'dispToque', label: 'Disp. Passe', icon: 'fa-users', color: 'text-slate-400' },
                     { key: 'dispGol', label: 'Ir p/ Gol', icon: 'fa-hand-paper', color: 'text-yellow-400' }
                 ];
 
@@ -193,8 +214,6 @@
                 calcAverage(player.id);
             });
         }
-
-        // --- Funções de Gerenciamento ---
 
         window.addPlayer = () => {
             playersData.push({
@@ -228,29 +247,34 @@
             }
         };
 
+        // --- Cálculo de Força Normalizado ---
         function calcAverage(id) {
             const p = playersData.find(p => p.id === id);
-            if(!p) return;
+            if(!p) return 0;
 
             const s = p.stats;
-            // Média ponderada simples
-            // Substituído Chute+Passe por HabAtaque, agora são 4 itens principais na linha
-            let sum = s.habAtaque + s.habDefesa + s.dispDefesa + s.dispToque;
-            let count = 4;
             
-            // Se tiver disposição pro gol, conta habilidade de gol na média
-            if(s.dispGol > 50) {
-                sum += s.habGol * 2;
-                count += 2;
+            // Goleiro Fixo
+            if(s.dispGol === 100) {
+                const avg = s.habGol;
+                const avgEl = document.getElementById(`avg-${id}`);
+                if(avgEl) avgEl.innerText = avg;
+                return avg;
             }
 
-            const avg = Math.round(sum / count);
+            // Média Ponderada
+            const totalWeight = 9; 
+            const weightedSum = (s.habAtaque * 4) + (s.habDefesa * 4) + (s.dispDefesa * 0.5) + (s.dispToque * 0.5);
+            const avg = Math.round(weightedSum / totalWeight);
+            
+            // Atualiza display na configuração
             const avgEl = document.getElementById(`avg-${id}`);
             if(avgEl) avgEl.innerText = avg;
+            
             return avg;
         }
 
-        // --- Utils: Fisher-Yates Shuffle ---
+        // --- Shuffle ---
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -259,8 +283,7 @@
             return array;
         }
 
-        // --- Lógica de Geração Fut Gauss (Balanceamento e Mistura) ---
-
+        // --- Lógica Definitiva: Distribuição em Pares Dinâmicos ---
         window.gerarTimes = () => {
             let pool = playersData.filter(p => p.name.trim() !== "");
             
@@ -269,14 +292,10 @@
                 return;
             }
 
-            // 1. Calcular Força
-            pool.forEach(p => {
-                p.force = calcAverage(p.id);
-                // Peso extra para goleiro fixo na ordenação, mas não no sorteio de quem joga
-                if(p.stats.dispGol === 100) p.force = p.stats.habGol * 3; 
-            });
+            // 1. Atualizar Forças
+            pool.forEach(p => { p.force = calcAverage(p.id); });
 
-            // 2. Separar Goleiros Fixos e Linha
+            // 2. Separar Goleiros e Linha
             let fixedKeepers = pool.filter(p => p.stats.dispGol === 100);
             let linePlayers = pool.filter(p => p.stats.dispGol !== 100);
 
@@ -284,59 +303,41 @@
             let team2 = [];
             let reserves = [];
             
-            const PLAYERS_PER_TEAM = 5;
-            const TOTAL_SLOTS = PLAYERS_PER_TEAM * 2;
+            const PLAYERS_PER_TEAM = 5; 
+            
+            // --- FASE 1: Goleiros ---
+            shuffleArray(fixedKeepers); 
+            if (fixedKeepers.length > 0) team1.push(fixedKeepers.shift());
+            if (fixedKeepers.length > 0) team2.push(fixedKeepers.shift());
+            while(fixedKeepers.length > 0) linePlayers.push(fixedKeepers.shift());
 
-            // 3. Garantir Goleiros Fixos no jogo (Prioridade Máxima)
-            // Se houver mais de 2 goleiros fixos, os excedentes viram linha ou reserva
-            // Ordenar goleiros por força para distribuir equilibrado
-            fixedKeepers.sort((a,b) => b.force - a.force);
 
-            while(fixedKeepers.length > 0) {
-                if (team1.length < 1) team1.push(fixedKeepers.shift());
-                else if (team2.length < 1) team2.push(fixedKeepers.shift());
-                else {
-                    // Sobra de goleiro vira jogador de linha (vai pro pool de sorteio)
-                    linePlayers.push(fixedKeepers.shift());
-                }
-            }
-
-            // 4. Selecionar Jogadores de Linha para o Jogo (MISTURA)
-            // Aqui está o segredo: EMBARALHAR a linha antes de escolher quem joga.
-            // Assim, ruins e bons têm a mesma chance de jogar ou ficar na reserva.
+            // --- FASE 2: Jogadores de Linha ---
             shuffleArray(linePlayers);
 
-            // Quantos faltam para completar os times?
-            let slotsNeeded = TOTAL_SLOTS - (team1.length + team2.length);
-            
-            // Pega os N primeiros do embaralhado para jogar
-            let activeLinePlayers = linePlayers.slice(0, slotsNeeded);
-            // O resto vai pra reserva (agora a reserva é aleatória, não só os ruins)
-            reserves = linePlayers.slice(slotsNeeded);
+            let slotsT1 = PLAYERS_PER_TEAM - team1.length;
+            let slotsT2 = PLAYERS_PER_TEAM - team2.length;
+            let totalSlotsNeeded = slotsT1 + slotsT2;
 
-            // 5. Ordenar os escolhidos por força para distribuir equilibrado
-            activeLinePlayers.sort((a,b) => b.force - a.force);
+            let activePool = linePlayers.slice(0, totalSlotsNeeded);
+            reserves = linePlayers.slice(totalSlotsNeeded);
 
-            // 6. Distribuição Equilibrada por Pares (Melhora a distribuição de "panelas")
-            // Essa lógica garante que os melhores jogadores sejam divididos um a um.
-            // Pega o par de melhores disponíveis: O melhor vai pro time mais fraco.
-            while(activeLinePlayers.length > 0) {
-                // Pega até 2 jogadores (o par do topo)
-                let p1 = activeLinePlayers.shift();
-                let p2 = activeLinePlayers.length > 0 ? activeLinePlayers.shift() : null;
+            // --- FASE 3: O Draft de Pares (Anti-Panela) ---
+            activePool.sort((a,b) => b.force - a.force);
 
-                // Verifica vagas
-                let spaceT1 = PLAYERS_PER_TEAM - team1.length;
-                let spaceT2 = PLAYERS_PER_TEAM - team2.length;
+            while(activePool.length > 0) {
+                let p1 = activePool.shift(); 
+                let p2 = activePool.length > 0 ? activePool.shift() : null;
 
-                // Se ambos têm vaga, aplica lógica do equilíbrio
-                if (spaceT1 > 0 && spaceT2 > 0) {
-                    let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
-                    let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
+                let currentSum1 = team1.reduce((acc, p) => acc + p.force, 0);
+                let currentSum2 = team2.reduce((acc, p) => acc + p.force, 0);
 
+                let t1Full = team1.length >= PLAYERS_PER_TEAM;
+                let t2Full = team2.length >= PLAYERS_PER_TEAM;
+
+                if (!t1Full && !t2Full) {
                     if (p2) {
-                        // Temos um par. O mais forte (p1) vai para o time mais fraco.
-                        if (sum1 <= sum2) {
+                        if (currentSum1 <= currentSum2) {
                             team1.push(p1);
                             team2.push(p2);
                         } else {
@@ -344,51 +345,39 @@
                             team1.push(p2);
                         }
                     } else {
-                        // Só sobrou um. Vai pro time mais fraco.
-                        if (sum1 <= sum2) team1.push(p1);
+                        if (currentSum1 <= currentSum2) team1.push(p1);
                         else team2.push(p1);
                     }
-                } else if (spaceT1 > 0) {
-                    // Só T1 tem vaga
+                } else if (!t1Full) {
                     team1.push(p1);
                     if(p2) team1.push(p2);
-                } else {
-                    // Só T2 tem vaga
+                } else if (!t2Full) {
                     team2.push(p1);
                     if(p2) team2.push(p2);
                 }
             }
 
-            // 7. Otimização Final (Trocas para refinar equilíbrio)
-            let improved = true;
-            let iterations = 0;
-            while(improved && iterations < 50) { // Limite de segurança
-                improved = false;
-                iterations++;
-                let sum1 = team1.reduce((acc, pl) => acc + pl.force, 0);
-                let sum2 = team2.reduce((acc, pl) => acc + pl.force, 0);
-                let currentDiff = Math.abs(sum1 - sum2);
+            // --- FASE 4: Troca de Ajuste Fino ---
+            let bestDiff = Math.abs(team1.reduce((a,b)=>a+b.force,0) - team2.reduce((a,b)=>a+b.force,0));
+            
+            for(let i=0; i<team1.length; i++) {
+                for(let j=0; j<team2.length; j++) {
+                    if(team1[i].stats.dispGol === 100 || team2[j].stats.dispGol === 100) continue;
 
-                for (let i = 0; i < team1.length; i++) {
-                    for (let j = 0; j < team2.length; j++) {
-                        let p1 = team1[i];
-                        let p2 = team2[j];
-
-                        // Trava goleiros fixos
-                        if (p1.stats.dispGol === 100 || p2.stats.dispGol === 100) continue;
-
-                        let newSum1 = sum1 - p1.force + p2.force;
-                        let newSum2 = sum2 - p2.force + p1.force;
-                        let newDiff = Math.abs(newSum1 - newSum2);
-
-                        if (newDiff < currentDiff) {
-                            team1[i] = p2;
-                            team2[j] = p1;
-                            improved = true;
-                            break; 
-                        }
+                    let sum1 = team1.reduce((a,b)=>a+b.force, 0);
+                    let sum2 = team2.reduce((a,b)=>a+b.force, 0);
+                    
+                    let newSum1 = sum1 - team1[i].force + team2[j].force;
+                    let newSum2 = sum2 - team2[j].force + team1[i].force;
+                    
+                    if (Math.abs(newSum1 - newSum2) < bestDiff) {
+                        let temp = team1[i];
+                        team1[i] = team2[j];
+                        team2[j] = temp;
+                        bestDiff = Math.abs(newSum1 - newSum2);
+                        i = team1.length; 
+                        break;
                     }
-                    if (improved) break;
                 }
             }
 
@@ -399,24 +388,33 @@
             const s = p.stats;
             const r = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+            // Goleiro
             if (s.dispGol === 100) {
-                if (s.habGol < 40) return `Goleiro chama-gol. ${r(vocabulario.goleiroRuim)}.`;
-                if (s.habGol > 80) return `Paredão. ${r(vocabulario.goleiroBom)}.`;
-                return "Goleiro mediano, torcer pra não frangar.";
+                if (s.habGol < 40) return `Goleiro ${r(vocabulario.goleiroRuim)}.`;
+                if (s.habGol > 80) return `Goleiro ${r(vocabulario.goleiroBom)}.`;
+                return "Goleiro mediano.";
             }
 
-            let criticas = [];
-            if (s.habAtaque < 30) criticas.push(`ataque de ${r(['risada', 'pelúcia'])}`);
-            if (s.dispDefesa < 30) criticas.push(`${r(['avenida', 'mãe da caridade'])} na defesa`);
-            if (s.dispToque < 30) criticas.push(`${r(vocabulario.fominha)}`);
+            let descricoes = [];
+
+            // Nível Técnico Geral
+            if (s.habAtaque > 80) descricoes.push(r(vocabulario.bom));
+            else if (s.habAtaque < 30 && s.habDefesa < 30) descricoes.push(r(vocabulario.ruimGeral));
+
+            // Características Específicas
+            if (s.dispToque < 35) descricoes.push(r(vocabulario.fominha));
+            if (s.dispDefesa < 35) descricoes.push(r(vocabulario.defesaFraca));
+            if (s.habAtaque < 35) descricoes.push(r(vocabulario.ataqueFraco));
             
-            if (criticas.length > 0) return `${r(vocabulario.ruimGeral)}. Tem ${criticas.join(' e ')}.`;
-            
-            if (s.habAtaque > 80) return `${r(vocabulario.bom)}, liso no ataque.`;
-            if (s.dispToque > 70) return "Garçom, toca bem.";
-            if (s.dispDefesa > 80) return "Xerife, açougueiro da zaga.";
-            
-            return `${r(vocabulario.ruimGeral)}, só completa time.`;
+            // Adiciona elogios específicos se for muito bom em algo mas não caiu no geral
+            if (s.dispToque > 80 && !descricoes.includes("Garçom")) descricoes.push("Garçom");
+            if (s.habDefesa > 85 && !descricoes.includes("Xerife")) descricoes.push("Xerife");
+
+            // Se não tiver nada, bota algo genérico
+            if (descricoes.length === 0) return "Jogador tático, não compromete.";
+
+            // Junta tudo com pontuação e capitalização
+            return descricoes.join(". ") + ".";
         }
 
         function renderOutput(t1, t2, res) {
@@ -427,10 +425,9 @@
             const sum1 = t1.reduce((a,b)=>a+b.force, 0);
             const sum2 = t2.reduce((a,b)=>a+b.force, 0);
 
-            // Ajustando a lógica de exibição de posição baseada nos novos atributos
             const getPosicao = (p) => {
                 if (p.stats.dispGol === 100) return 'Goleiro Fixo';
-                if (p.stats.habGol > p.stats.habAtaque && p.stats.habGol > 50) return 'Goleiro/Linha';
+                if (p.stats.habGol > p.stats.habAtaque && p.stats.habGol > 60) return 'Goleiro/Linha';
                 return 'Linha';
             };
 
@@ -438,7 +435,7 @@
                 <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
                     <div class="${color} p-3 text-center">
                         <h3 class="font-bold text-xl text-white uppercase">${name}</h3>
-                        <p class="text-xs text-white opacity-80">Força Total: ${sum} | Jogadores: ${players.length}</p>
+                        <p class="text-xs text-white opacity-80">Jogadores: ${players.length}</p>
                     </div>
                     <div class="p-4 space-y-3">
                         ${players.map(p => `
@@ -460,7 +457,7 @@
                                    teamHTML("Time 2 (Sem Colete)", t2, sum2, "bg-blue-600");
 
             containerR.innerHTML = res.length > 0 ? res.map(p => 
-                `<span class="inline-block bg-slate-800 rounded px-2 py-1 m-1 text-sm border border-slate-600">${p.name}</span>`
+                `<span class="inline-block bg-slate-800 rounded px-2 py-1 m-1 text-sm border border-slate-600" title="${gerarComentario(p)}">${p.name}</span>`
             ).join('') : '<p class="text-sm italic">Ninguém no banco.</p>';
 
             modal.classList.remove('hidden');
@@ -499,7 +496,6 @@
             });
         };
 
-        // Render inicial
         renderPlayers();
 
     </script>
