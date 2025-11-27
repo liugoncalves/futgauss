@@ -100,7 +100,7 @@
         // Dados iniciais
         const initialNames = [
             "Bruno", "Leo", "Thiago", "Ricardo", "Pedro", "Welliton", 
-            "Vinicius", "Abade", "Bola de Fogo ☄", "Alexandre", 
+            "Vinicius", "Abade", "Bola de Fogo", "Alexandre", 
             "Gustavo", "Douglas", "Caio"
         ];
 
@@ -128,18 +128,23 @@
             ],
 
             defesaFraca: [
-            "Avenida", "Não marca nem consulta", "Mãe da caridade", "Porteira aberta",
-            "Passa manteiga", "Dá espaço até pra sombra", "Buraco negro", "Cortina de ar"
+            "Avenida", "Não marca nem consulta", "Porteira aberta",
+            "Dá espaço até pra sombra"
             ],
 
             ataqueFraco: [
-            "Chute de pantufa", "Isola tudo pra lua", "Inimigo do gol", "Pé murcho", "Chinelinho",
-            "Faz dente de leite", "Mira torta", "Pega vento", "Senta na bola"
+            "Chute de pantufa", "Isola tudo pra lua", "Inimigo do gol", "Pé murcho",
+            "Mira torta"
             ],
 
             fominha: [
             "Dono da bola", "Não toca nem pra mãe","Gladiador da posse", 
             "Passa fome mas não passa a bola",   "Se a bola falasse, ia gritar por liberdade"
+            ],
+
+            sortudo: [
+            "Sorte grande", "Anjo da guarda", "Pé de coelho",
+            "Cagão"
             ],
 
             goleiroRuim: [
@@ -153,8 +158,7 @@
             ],
 
             bom: [
-            "Maquininha", "Motorzinho", "Liso", "Cobra",
-            "Canhão", "Mágico da bola"
+            "Artilheiro nato", "Pesadelo da defesa", "Técnico", "Chutador"
             ]
 
         };
@@ -399,7 +403,8 @@
 
             // Nível Técnico Geral
             if (s.habAtaque > 80) descricoes.push(r(vocabulario.bom));
-            else if (s.habAtaque < 30 && s.habDefesa < 30) descricoes.push(r(vocabulario.ruimGeral));
+            if (s.habAtaque > 40 && s.habAtaque <= 60) descricoes.push(r(vocabulario.sortudo));
+            if (s.habAtaque < 30 && s.habDefesa < 30) descricoes.push(r(vocabulario.ruimGeral));
 
             // Características Específicas
             if (s.dispToque < 35) descricoes.push(r(vocabulario.fominha));
@@ -411,7 +416,7 @@
             if (s.habDefesa > 85 && !descricoes.includes("Xerife")) descricoes.push("Xerife");
 
             // Se não tiver nada, bota algo genérico
-            if (descricoes.length === 0) return "Jogador tático, não compromete.";
+            if (descricoes.length === 0) return "Jogador tático.";
 
             // Junta tudo com pontuação e capitalização
             return descricoes.join(". ") + ".";
