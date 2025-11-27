@@ -18,7 +18,6 @@
 </head>
 <body class="pb-20">
 
-    <!-- Header -->
     <header class="bg-green-800 text-white p-6 shadow-lg border-b-4 border-green-600 sticky top-0 z-50">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
@@ -38,26 +37,22 @@
 
     <div class="max-w-5xl mx-auto p-4">
         
-        <!-- Intro / Manual do Boleiro -->
         <div class="bg-slate-800 rounded-lg p-4 mb-6 text-sm text-slate-300 border border-slate-700">
             <h3 class="font-bold text-yellow-400 mb-2 uppercase text-xs tracking-wide"><i class="fas fa-book-open mr-2"></i>Manual de Atributos (Regras da Várzea):</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                <p><strong class="text-green-400">Hab. Ataque (Peso 2x):</strong> Sabe chutar e driblar.</p>
-                <p><strong class="text-blue-400">Hab. Defesa (Peso 2x):</strong> Sabe desarmar sem quebrar a perna.</p>
+                <p><strong class="text-green-400">Hab. Ataque (Peso 4x):</strong> Sabe chutar e driblar.</p>
+                <p><strong class="text-blue-400">Hab. Defesa (Peso 4x):</strong> Sabe desarmar sem quebrar a perna.</p>
                 <p><strong class="text-purple-400">Hab. Gol:</strong> Só conta para a nota se for pro gol.</p>
-                <p><strong class="text-slate-400">Disp. Defesa (Peso 1x):</strong> Vontade de voltar pra marcar.</p>
-                <p><strong class="text-slate-400">Disp. Passe (Peso 1x):</strong> Vontade de soltar a bola.</p>
+                <p><strong class="text-slate-400">Disp. Defesa (Peso 0.5x):</strong> Vontade de voltar pra marcar.</p>
+                <p><strong class="text-slate-400">Disp. Passe (Peso 0.5x):</strong> Vontade de soltar a bola.</p>
                 <p><strong class="text-yellow-400">Ir p/ Gol:</strong> Se for <strong>100</strong>, vira Goleiro Fixo e a nota ignora ataque/defesa.</p>
             </div>
             <div class="mt-3 pt-2 border-t border-slate-700 text-right text-xs text-slate-500" id="player-count">0 Jogadores</div>
         </div>
 
-        <!-- Players Grid -->
         <div id="players-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Cards will be injected here via JS -->
-        </div>
+            </div>
         
-        <!-- Add Button Bottom -->
         <div class="mt-6 text-center">
             <button onclick="addPlayer()" class="border-2 border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 hover:bg-slate-800 rounded-lg p-4 w-full md:w-1/2 transition-all">
                 <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
@@ -65,7 +60,6 @@
             </button>
         </div>
 
-        <!-- Results Modal -->
         <div id="results-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 overflow-y-auto">
             <div class="min-h-screen px-4 text-center">
                 <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
@@ -77,8 +71,7 @@
                     <h2 class="text-2xl font-bold text-yellow-400 mb-6 text-center uppercase border-b border-slate-600 pb-4">Escalação Oficial (Fut Gauss)</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teams-output">
-                        <!-- Output here -->
-                    </div>
+                        </div>
 
                     <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
                         <h3 class="text-lg font-bold text-gray-400 mb-2">Reservas (Sorteio Aleatório)</h3>
@@ -97,7 +90,6 @@
     </div>
 
     <script>
-        // Dados iniciais
         const initialNames = [
             "Bruno", "Leo", "Thiago", "Ricardo", "Pedro", "Welliton", 
             "Vinicius", "Abade", "Bola de Fogo", "Alexandre", 
@@ -122,7 +114,7 @@
 
         const vocabulario = {
             ruimGeral: [
-            "Bisonho", , "Grosso", "Açougueiro", 
+            "Bisonho", "Grosso", "Açougueiro", 
             "Bode cego", "Matador de canela",
             "Toca torto", "Arranca suspiro"
             ],
@@ -251,34 +243,27 @@
             }
         };
 
-        // --- Cálculo de Força Normalizado ---
         function calcAverage(id) {
             const p = playersData.find(p => p.id === id);
             if(!p) return 0;
 
             const s = p.stats;
+            const avgEl = document.getElementById(`avg-${id}`);
             
-            // Goleiro Fixo
             if(s.dispGol === 100) {
                 const avg = s.habGol;
-                const avgEl = document.getElementById(`avg-${id}`);
                 if(avgEl) avgEl.innerText = avg;
                 return avg;
             }
 
-            // Média Ponderada
             const totalWeight = 9; 
             const weightedSum = (s.habAtaque * 4) + (s.habDefesa * 4) + (s.dispDefesa * 0.5) + (s.dispToque * 0.5);
             const avg = Math.round(weightedSum / totalWeight);
             
-            // Atualiza display na configuração
-            const avgEl = document.getElementById(`avg-${id}`);
             if(avgEl) avgEl.innerText = avg;
-            
             return avg;
         }
 
-        // --- Shuffle ---
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -287,7 +272,6 @@
             return array;
         }
 
-        // --- Lógica Definitiva: Distribuição em Pares Dinâmicos ---
         window.gerarTimes = () => {
             let pool = playersData.filter(p => p.name.trim() !== "");
             
@@ -296,10 +280,8 @@
                 return;
             }
 
-            // 1. Atualizar Forças
             pool.forEach(p => { p.force = calcAverage(p.id); });
 
-            // 2. Separar Goleiros e Linha
             let fixedKeepers = pool.filter(p => p.stats.dispGol === 100);
             let linePlayers = pool.filter(p => p.stats.dispGol !== 100);
 
@@ -309,14 +291,17 @@
             
             const PLAYERS_PER_TEAM = 5; 
             
-            // --- FASE 1: Goleiros ---
+            
             shuffleArray(fixedKeepers); 
-            if (fixedKeepers.length > 0) team1.push(fixedKeepers.shift());
-            if (fixedKeepers.length > 0) team2.push(fixedKeepers.shift());
-            while(fixedKeepers.length > 0) linePlayers.push(fixedKeepers.shift());
+            
+            const k1 = fixedKeepers.shift();
+            if (k1) team1.push(k1);
+            
+            const k2 = fixedKeepers.shift();
+            if (k2) team2.push(k2);
+            
+            linePlayers = [...linePlayers, ...fixedKeepers];
 
-
-            // --- FASE 2: Jogadores de Linha ---
             shuffleArray(linePlayers);
 
             let slotsT1 = PLAYERS_PER_TEAM - team1.length;
@@ -326,7 +311,6 @@
             let activePool = linePlayers.slice(0, totalSlotsNeeded);
             reserves = linePlayers.slice(totalSlotsNeeded);
 
-            // --- FASE 3: O Draft de Pares (Anti-Panela) ---
             activePool.sort((a,b) => b.force - a.force);
 
             while(activePool.length > 0) {
@@ -340,28 +324,16 @@
                 let t2Full = team2.length >= PLAYERS_PER_TEAM;
 
                 if (!t1Full && !t2Full) {
-                    if (p2) {
-                        if (currentSum1 <= currentSum2) {
-                            team1.push(p1);
-                            team2.push(p2);
-                        } else {
-                            team2.push(p1);
-                            team1.push(p2);
-                        }
-                    } else {
-                        if (currentSum1 <= currentSum2) team1.push(p1);
-                        else team2.push(p1);
-                    }
-                } else if (!t1Full) {
-                    team1.push(p1);
-                    if(p2) team1.push(p2);
-                } else if (!t2Full) {
-                    team2.push(p1);
-                    if(p2) team2.push(p2);
+                    const [weaker, stronger] = currentSum1 <= currentSum2 ? [team1, team2] : [team2, team1];
+                    weaker.push(p1);
+                    if (p2) stronger.push(p2);
+                } else {
+                    const targetTeam = !t1Full ? team1 : team2;
+                    targetTeam.push(p1);
+                    if (p2) targetTeam.push(p2);
                 }
             }
 
-            // --- FASE 4: Troca de Ajuste Fino ---
             let bestDiff = Math.abs(team1.reduce((a,b)=>a+b.force,0) - team2.reduce((a,b)=>a+b.force,0));
             
             for(let i=0; i<team1.length; i++) {
@@ -392,34 +364,26 @@
             const s = p.stats;
             const r = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-            // Goleiro
             if (s.dispGol === 100) {
-                if (s.habGol < 40) return `Goleiro ${r(vocabulario.goleiroRuim)}.`;
-                if (s.habGol > 80) return `Goleiro ${r(vocabulario.goleiroBom)}.`;
-                return "Goleiro mediano.";
+                return s.habGol < 40 ? `Goleiro ${r(vocabulario.goleiroRuim)}.` : 
+                       s.habGol > 80 ? `Goleiro ${r(vocabulario.goleiroBom)}.` : 
+                       "Goleiro mediano.";
             }
 
-            let descricoes = [];
+            const rules = [
+                { cond: s.habAtaque > 80, text: r(vocabulario.bom) },
+                { cond: s.habAtaque > 40 && s.habAtaque <= 60, text: r(vocabulario.sortudo) },
+                { cond: s.habAtaque < 30 && s.habDefesa < 30, text: r(vocabulario.ruimGeral) },
+                { cond: s.dispToque < 35, text: r(vocabulario.fominha) },
+                { cond: s.dispDefesa < 35, text: r(vocabulario.defesaFraca) },
+                { cond: s.habAtaque < 35, text: r(vocabulario.ataqueFraco) },
+                { cond: s.dispToque > 80, text: "Garçom" },
+                { cond: s.habDefesa > 85, text: "Xerife" }
+            ];
 
-            // Nível Técnico Geral
-            if (s.habAtaque > 80) descricoes.push(r(vocabulario.bom));
-            if (s.habAtaque > 40 && s.habAtaque <= 60) descricoes.push(r(vocabulario.sortudo));
-            if (s.habAtaque < 30 && s.habDefesa < 30) descricoes.push(r(vocabulario.ruimGeral));
+            const descricoes = rules.filter(rule => rule.cond).map(rule => rule.text);
 
-            // Características Específicas
-            if (s.dispToque < 35) descricoes.push(r(vocabulario.fominha));
-            if (s.dispDefesa < 35) descricoes.push(r(vocabulario.defesaFraca));
-            if (s.habAtaque < 35) descricoes.push(r(vocabulario.ataqueFraco));
-            
-            // Adiciona elogios específicos se for muito bom em algo mas não caiu no geral
-            if (s.dispToque > 80 && !descricoes.includes("Garçom")) descricoes.push("Garçom");
-            if (s.habDefesa > 85 && !descricoes.includes("Xerife")) descricoes.push("Xerife");
-
-            // Se não tiver nada, bota algo genérico
-            if (descricoes.length === 0) return "Jogador tático.";
-
-            // Junta tudo com pontuação e capitalização
-            return descricoes.join(". ") + ".";
+            return descricoes.length === 0 ? "Jogador tático." : descricoes.join(". ") + ".";
         }
 
         function renderOutput(t1, t2, res) {
@@ -431,9 +395,9 @@
             const sum2 = t2.reduce((a,b)=>a+b.force, 0);
 
             const getPosicao = (p) => {
-                if (p.stats.dispGol === 100) return 'Goleiro Fixo';
-                if (p.stats.habGol > p.stats.habAtaque && p.stats.habGol > 60) return 'Goleiro/Linha';
-                return 'Linha';
+                return (p.stats.dispGol === 100) ? 'Goleiro Fixo' :
+                       (p.stats.habGol > p.stats.habAtaque && p.stats.habGol > 60) ? 'Goleiro/Linha' : 
+                       'Linha';
             };
 
             const teamHTML = (name, players, sum, color) => `
@@ -472,7 +436,6 @@
             const t1 = document.querySelectorAll('#teams-output > div')[0];
             const t2 = document.querySelectorAll('#teams-output > div')[1];
             
-            
             const extractTeam = (el) => {
                 let teamName = el.querySelector('h3').innerText;
                 let rows = el.querySelectorAll('.p-4 > div');
@@ -485,6 +448,7 @@
                 return str;
             };
 
+            let text = ""; 
             text += extractTeam(t1) + "\n";
             text += extractTeam(t2) + "\n";
             
